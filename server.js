@@ -1,3 +1,5 @@
+// server.js (Back-End untuk menerima data lokasi)
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
@@ -8,75 +10,35 @@ const app = express();
 app.use(cors()); 
 app.use(bodyParser.json());
 
-// Data Disimpan di Memori Server (Simulasi Database)
-let overtimeRequests = [
-    { id: 1, name: "Budi Santoso", date: "2025-11-25", startTime: "18:00", endTime: "20:00", hours: 2, status: "Pending" },
-    { id: 2, name: "Ani Wijaya", date: "2025-11-26", startTime: "17:30", endTime: "19:00", hours: 1.5, status: "Approved" }
-];
-let nextId = 3;
+// Simpan data lokasi yang dikirim dari Front-End
+let receivedLocations = [];
 
-function calculateHours(start, end) {
-    const startParts = start.split(':').map(Number);
-    const endParts = end.split(':').map(Number);
-    
-    const startMinutes = startParts[0] * 60 + startParts[1];
-    const endMinutes = endParts[0] * 60 + endParts[1];
-    
-    let durationMinutes = endMinutes - startMinutes;
-    
-    if (durationMinutes < 0) {
-        durationMinutes += 24 * 60; 
+// Endpoint untuk menerima data lokasi (CREATE)
+app.post('/api/location', (req, res) => {
+    const { lat, lon } = req.body;
+    if (!lat || !lon) {
+        return res.status(400).send("Koordinat Latitude dan Longitude diperlukan.");
     }
     
-    return durationMinutes / 60;
-}
-
-// 1. READ (GET)
-app.get('/api/overtime', (req, res) => {
-    res.json(overtimeRequests);
-});
-
-// 2. CREATE (POST)
-app.post('/api/overtime', (req, res) => {
-    const { name, date, startTime, endTime } = req.body;
-
-    if (!name || !date || !startTime || !endTime) {
-        return res.status(400).send("Semua field harus diisi.");
-    }
-
-    const hours = calculateHours(startTime, endTime);
-
-    const newRequest = { 
-        id: nextId++, 
-        name, 
-        date, 
-        startTime, 
-        endTime, 
-        hours: parseFloat(hours.toFixed(2)),
-        status: "Pending" 
+    const newEntry = { 
+        timestamp: new Date().toISOString(),
+        latitude: lat,
+        longitude: lon 
     };
-    
-    overtimeRequests.push(newRequest);
-    res.status(201).json(newRequest);
+    receivedLocations.push(newEntry);
+    console.log("Lokasi baru diterima:", newEntry);
+    res.status(201).json({ message: "Lokasi berhasil disimpan di server.", data: newEntry });
 });
 
-// 3. DELETE
-app.delete('/api/overtime/:id', (req, res) => {
-    const id = parseInt(req.params.id);
-    const initialLength = overtimeRequests.length;
-    overtimeRequests = overtimeRequests.filter(item => item.id !== id);
-    
-    if (overtimeRequests.length < initialLength) {
-        res.status(200).send(`Permintaan lembur ID ${id} berhasil dihapus.`);
-    } else {
-        res.status(404).send("Permintaan lembur tidak ditemukan.");
-    }
+// Endpoint untuk melihat data lokasi yang tersimpan (READ - opsional)
+app.get('/api/location', (req, res) => {
+    res.json(receivedLocations);
 });
 
 app.get('/', (req, res) => {
-    res.send('Overtime API berjalan!');
+    res.send('Location API berjalan!');
 });
 
 app.listen(PORT, () => {
-    console.log(`Server Overtime API berjalan di port ${PORT}`);
+    console.log(`Server Location API berjalan di port ${PORT}`);
 });
