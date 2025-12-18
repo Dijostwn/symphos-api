@@ -1,44 +1,39 @@
-// server.js (Back-End untuk menerima data lokasi)
-
 const express = require('express');
-const bodyParser = require('body-parser');
-const cors = require('cors');
-
-const PORT = process.env.PORT || 5000;
+const path = require('path');
 const app = express();
+const PORT = process.env.PORT || 3000;
 
-app.use(cors()); 
-app.use(bodyParser.json());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, 'public')));
 
-// Simpan data lokasi yang dikirim dari Front-End
-let receivedLocations = [];
-
-// Endpoint untuk menerima data lokasi (CREATE)
-app.post('/api/location', (req, res) => {
-    const { lat, lon } = req.body;
-    if (!lat || !lon) {
-        return res.status(400).send("Koordinat Latitude dan Longitude diperlukan.");
+let articles = [
+    {
+        id: 1,
+        category: "Fashion",
+        title: "Brand Lokal Menembus Pasar Paris Fashion Week",
+        image: "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=800"
+    },
+    {
+        id: 2,
+        category: "Culture",
+        title: "Seni Jalanan Jakarta: Ekspresi Tanpa Batas",
+        image: "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=800"
     }
-    
-    const newEntry = { 
-        timestamp: new Date().toISOString(),
-        latitude: lat,
-        longitude: lon 
-    };
-    receivedLocations.push(newEntry);
-    console.log("Lokasi baru diterima:", newEntry);
-    res.status(201).json({ message: "Lokasi berhasil disimpan di server.", data: newEntry });
+];
+
+app.get('/api/articles', (req, res) => res.json(articles));
+
+app.post('/api/articles', (req, res) => {
+    const { title, category, image } = req.body;
+    articles.unshift({ id: Date.now(), title, category, image });
+    res.redirect('/admin.html?success=1');
 });
 
-// Endpoint untuk melihat data lokasi yang tersimpan (READ - opsional)
-app.get('/api/location', (req, res) => {
-    res.json(receivedLocations);
+// Route untuk menghapus post
+app.get('/api/delete/:id', (req, res) => {
+    articles = articles.filter(a => a.id != req.params.id);
+    res.redirect('/admin.html?deleted=1');
 });
 
-app.get('/', (req, res) => {
-    res.send('Location API berjalan!');
-});
-
-app.listen(PORT, () => {
-    console.log(`Server Location API berjalan di port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
