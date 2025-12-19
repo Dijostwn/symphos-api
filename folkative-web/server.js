@@ -1,13 +1,20 @@
-
 const express = require('express');
 const path = require('path');
 const app = express();
+
+// 1. PENGATURAN PORT (Wajib untuk Railway)
 const PORT = process.env.PORT || 3000;
+
+// 2. GANTI PASSWORD INI (Hanya kamu yang tahu)
+const ADMIN_PASSWORD = "kuncirahasia123"; 
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Menyajikan file statis dari folder public (index.html dll)
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Database sementara
 let articles = [
     {
         id: 1,
@@ -23,18 +30,50 @@ let articles = [
     }
 ];
 
+// --- ROUTING ---
+
+// 3. JALUR RAHASIA KE HALAMAN ADMIN
+// Sekarang kamu akses admin lewat: link-railway.app/hanya-saya-yang-tahu
+app.get('/hanya-saya-yang-tahu', (req, res) => {
+    res.sendFile(path.join(__dirname, 'admin.html'));
+});
+
+// API untuk ambil semua artikel
 app.get('/api/articles', (req, res) => res.json(articles));
 
+// 4. API UNTUK POST ARTIKEL (DENGAN CEK PASSWORD)
 app.post('/api/articles', (req, res) => {
-    const { title, category, image } = req.body;
-    articles.unshift({ id: Date.now(), title, category, image });
-    res.redirect('/admin.html?success=1');
+    const { title, category, image, password } = req.body;
+
+    // Cek apakah password yang dimasukkan di form benar
+    if (password !== ADMIN_PASSWORD) {
+        return res.status(403).send("<h1>Akses Ditolak: Password Salah!</h1><a href='/hanya-saya-yang-tahu'>Kembali</a>");
+    }
+
+    articles.unshift({ 
+        id: Date.now(), 
+        title, 
+        category, 
+        image: image || "https://via.placeholder.com/800x600" 
+    });
+
+    // Balik ke halaman admin rahasia setelah sukses
+    res.redirect('/hanya-saya-yang-tahu?success=1');
 });
 
-// Route untuk menghapus post
+// 5. API UNTUK HAPUS ARTIKEL (DENGAN CEK PASSWORD)
 app.get('/api/delete/:id', (req, res) => {
+    const pass = req.query.pass;
+
+    if (pass !== ADMIN_PASSWORD) {
+        return res.status(403).send("Akses Ditolak: Kamu tidak punya izin!");
+    }
+
     articles = articles.filter(a => a.id != req.params.id);
-    res.redirect('/admin.html?deleted=1');
+    res.redirect('/hanya-saya-yang-tahu?deleted=1');
 });
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// 6. MENJALANKAN SERVER
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server Folkative Clone jalan di port ${PORT}`);
+});
