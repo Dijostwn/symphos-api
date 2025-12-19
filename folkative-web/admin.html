@@ -2,49 +2,92 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>CMS Admin - Folkative</title>
+    <title>CMS Admin - Folkative (Protected)</title>
     <style>
-        body { font-family: sans-serif; padding: 40px; max-width: 800px; margin: auto; }
-        form { background: #f4f4f4; padding: 20px; margin-bottom: 40px; }
-        input, select, button { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; }
-        button { background: black; color: white; font-weight: bold; cursor: pointer; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { border-bottom: 1px solid #ddd; padding: 10px; text-align: left; }
-        .del-btn { color: red; text-decoration: none; font-size: 12px; }
+        body { font-family: 'Helvetica', Arial, sans-serif; padding: 40px; max-width: 600px; margin: auto; background: #fff; }
+        h2 { text-transform: uppercase; letter-spacing: -1px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+        form { background: #f9f9f9; padding: 20px; border: 1px solid #eee; margin-bottom: 40px; }
+        label { font-size: 12px; font-weight: bold; text-transform: uppercase; }
+        input, select, button { width: 100%; padding: 12px; margin: 8px 0 20px 0; border: 1px solid #000; box-sizing: border-box; }
+        
+        /* Highlight kolom password agar kamu ingat */
+        .pass-input { background: #fffde7; border: 2px solid #ffd600; }
+        
+        button { background: black; color: white; font-weight: bold; cursor: pointer; text-transform: uppercase; transition: 0.3s; }
+        button:hover { background: #333; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border-bottom: 1px solid #eee; padding: 15px 10px; text-align: left; font-size: 14px; }
+        .del-btn { color: red; cursor: pointer; font-weight: bold; text-decoration: underline; border: none; background: none; }
+        .back-link { display: inline-block; margin-top: 30px; color: #000; font-weight: bold; text-decoration: none; font-size: 12px; text-transform: uppercase; }
     </style>
 </head>
 <body>
     <h2>Post New Article</h2>
+    
     <form action="/api/articles" method="POST">
-        <input type="text" name="title" placeholder="Article Title" required>
+        <label>Judul Berita</label>
+        <input type="text" name="title" placeholder="Contoh: Brand Lokal di Paris" required>
+        
+        <label>Kategori</label>
         <select name="category">
             <option value="Fashion">Fashion</option>
             <option value="Culture">Culture</option>
             <option value="Lifestyle">Lifestyle</option>
         </select>
-        <input type="text" name="image" placeholder="Image URL (Unsplash Link)">
+        
+        <label>URL Gambar</label>
+        <input type="text" name="image" placeholder="https://images.unsplash.com/..." required>
+        
+        <label>Password Admin (Hanya Kamu yang Tahu)</label>
+        <input type="password" name="password" class="pass-input" placeholder="Masukkan Password" required>
+        
         <button type="submit">PUBLISH NOW</button>
     </form>
 
     <h3>Manage Posts</h3>
     <table id="admin-table">
-        <thead><tr><th>Title</th><th>Action</th></tr></thead>
-        <tbody></tbody>
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="list-artikel"></tbody>
     </table>
-    <br><a href="/">Back to Website</a>
+
+    <a href="/" class="back-link">← Kembali ke Website Utama</a>
 
     <script>
+        // Fungsi untuk ambil data artikel
         async function loadAdminData() {
             const res = await fetch('/api/articles');
             const data = await res.json();
-            document.querySelector('tbody').innerHTML = data.map(art => `
+            const tbody = document.getElementById('list-artikel');
+            
+            tbody.innerHTML = data.map(art => `
                 <tr>
                     <td>${art.title}</td>
-                    <td><a href="/api/delete/${art.id}" class="del-btn">Delete</a></td>
+                    <td><button onclick="hapusPost(${art.id})" class="del-btn">Delete</button></td>
                 </tr>
             `).join('');
         }
+
+        // Fungsi hapus dengan konfirmasi password
+        function hapusPost(id) {
+            const pass = prompt("Masukkan Password Admin untuk menghapus berita ini:");
+            if (pass) {
+                window.location.href = `/api/delete/${id}?pass=${pass}`;
+            }
+        }
+
+        // Jalankan saat halaman dibuka
         loadAdminData();
+
+        // Notifikasi sukses jika ada di URL
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('success')) alert('Berita Berhasil Terbit!');
+        if (urlParams.has('deleted')) alert('Berita Telah Dihapus!');
     </script>
 </body>
 </html>
